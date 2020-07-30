@@ -23,8 +23,6 @@ const Demo: FC = () => {
                 pageSize: 10
             }
         }).then(res => {
-            console.log(112)
-            console.log(res.data.data.records)
             setjsonData(res.data.data.records)
         })
     }, []);
