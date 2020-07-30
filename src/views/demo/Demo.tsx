@@ -12,8 +12,8 @@ import Nav from './../nav/Nav';
 //   }
 
 const Demo: FC = () => {
-    const [jsonData] = useState([{ 'title': '', 'content': 'content', 'createTime': '2020-01-01' }]);
-
+    // const [] = useState([{ 'title': '', 'content': 'content', 'createTime': '2020-01-01' }]);
+    const [jsonData, setjsonData] = useState([{ 'title': '', 'content': 'content', 'createTime': '2020-01-01' }])
     useEffect(() => {
         axios({
             method: 'get',
@@ -23,13 +23,9 @@ const Demo: FC = () => {
                 pageSize: 10
             }
         }).then(res => {
-            res.data.records.forEach((k,v) => {
-                jsonData.push({
-                    'title': k.title,
-                    'content': k.content,
-                    'createTime': k.createTime
-                })
-            })
+            console.log(112)
+            console.log(res.data.data.records)
+            setjsonData(res.data.data.records)
         })
     }, []);
 
