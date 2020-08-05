@@ -19,6 +19,3 @@ spring:
     # ddl-auto:update----每次运行程序，没有表格会新建表格，表内有数据不会清空，只会更新(推荐)
     # ddl-auto:validate----运行程序会校验数据与数据库的字段类型是否相同，不同会报错
     hibernate.ddl-auto: update
-  thymeleaf:
-    cache: false
-    mode: LEGACYHTML5

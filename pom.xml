@@ -69,12 +69,10 @@
             <version>3.4.5</version>
         </dependency>
 
-        <!--  Thymeleaf组件 动态页面-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-
 
     </dependencies>
 
