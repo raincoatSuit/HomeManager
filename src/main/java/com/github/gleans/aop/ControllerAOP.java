@@ -1,6 +1,7 @@
 package com.github.gleans.aop;
 
 import com.github.gleans.bean.ResultBean;
+import com.github.gleans.exception.AuthException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -37,10 +38,17 @@ public class ControllerAOP {
     private ResultBean<?> handlerException(ProceedingJoinPoint pjp, Throwable e) {
         ResultBean<?> result = new ResultBean<>();
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("错误信息[").append(e.getLocalizedMessage()).append("]错误详细信息===》").append(Arrays.toString(e.getStackTrace()));
-        log.error(stringBuilder.toString());
-        result.setMsg(stringBuilder.toString());
-        result.setCode(ResultBean.FAIL);
+
+        if (e instanceof AuthException) {
+            result.setMsg(e.getMessage());
+            result.setCode(((AuthException) e).getCode());
+        } else {
+            stringBuilder.append("错误信息[").append(e.getLocalizedMessage()).append("]错误详细信息===》").append(Arrays.toString(e.getStackTrace()));
+            result.setMsg(stringBuilder.toString());
+            result.setCode(ResultBean.FAIL);
+        }
+
+        log.error("异常信息：{}", stringBuilder.toString());
         return result;
     }
 }

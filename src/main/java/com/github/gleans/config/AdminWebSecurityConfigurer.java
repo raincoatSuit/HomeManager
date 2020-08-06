@@ -1,17 +1,43 @@
 package com.github.gleans.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.gleans.bean.ResultBean;
 import com.github.gleans.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.io.PrintWriter;
 
 @Configuration
 @EnableWebSecurity
 public class AdminWebSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
     private AdminService adminService;
+    private CustomSuccessHandler customSuccessHandler;
+    private CustomAuthEntryPoint authEntryPoint;
+    private CustomLogoutHandler logoutHandler;
+
+    @Autowired
+    public void setLogoutHandler(CustomLogoutHandler logoutHandler) {
+        this.logoutHandler = logoutHandler;
+    }
+
+    @Autowired
+    public void setAuthEntryPoint(CustomAuthEntryPoint authEntryPoint) {
+        this.authEntryPoint = authEntryPoint;
+    }
+
+    @Autowired
+    public void setCustomSuccessHandler(CustomSuccessHandler customSuccessHandler) {
+        this.customSuccessHandler = customSuccessHandler;
+    }
 
     @Autowired
     public void setAdminService(AdminService adminService) {
@@ -20,33 +46,64 @@ public class AdminWebSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-
-                .antMatchers("/static/**", "/images/**", "/js/**", "/css/**").permitAll() // 非 /admin下的页面可以访问
+        //配置失败的回调处理器
+        http.authenticationProvider(authenticationProvider())
+                .authorizeRequests()
+                .antMatchers("/static/**", "/images/**", "/js/**", "/admin/login").permitAll() // 非 /admin下的页面可以访问
                 .antMatchers("/**").authenticated() // 限制/admin下的页面必须登录后才可访问
                 .and()
                 .formLogin() // 表示使用自定义登录表单
-                .loginPage("/admin/login") // 自定义登录页面（使用controller），页面上的表单要post到/admin/loginPage
-                .usernameParameter("uname").passwordParameter("pwd") // 自定义登录表单输入框名称
+                .loginProcessingUrl("/admin/login") //登录的接口url (post请求)
+                .usernameParameter("username")
+                .passwordParameter("password") // 自定义登录表单输入框名称
                 .defaultSuccessUrl("/admin/dashboard") // 登录成功后的默认页
+                .successHandler(customSuccessHandler)
+                .failureHandler((req, resp, e) -> {
+                    resp.setContentType("application/json;charset=utf-8");
+                    PrintWriter writer = resp.getWriter();
+                    ResultBean<String> result = new ResultBean<>();
+                    if (e instanceof BadCredentialsException) {
+                        result.setMsg("用户名或密码错误,请重新输入");
+                    } else if (e instanceof LockedException) {
+                        result.setMsg("账户被锁定,请联系管理员");
+                    } else if (e instanceof DisabledException) {
+                        result.setMsg("账户被禁用,请联系管理员");
+                    } else if (e instanceof CredentialsExpiredException) {
+                        result.setMsg("密码已过期,登录失败");
+                    } else if (e instanceof AccountExpiredException) {
+                        result.setMsg("账户已过期,登录失败");
+                    }
+                    writer.write(new ObjectMapper().writeValueAsString(result));
+                    writer.flush();
+                    writer.close();
+                })
                 .permitAll() // 登录页允许没登录的情况访问
-
                 .and()
-                .rememberMe() // 表示在登录表单中使用记住我功能
+                .logout() //注销接口(get请求)
+                //注销成功的回调处理器
+                .logoutSuccessHandler(logoutHandler)
+                .and()
+                // 表示在登录表单中使用记住我功能
+                .rememberMe()
                 .rememberMeParameter("remember") // 表单记住我的checkbox元素的name
-                .userDetailsService(adminService) // 记住我功能要用到，需要用到UserDetailsService
-
                 .and()
-                .logout() // 表示使用自定义登出表单
-                .logoutUrl("/admin/logout") // 自定义登出页面（使用controller），页面上的表单要POST到/admin/logoutPage
-                .logoutSuccessUrl("/admin/login?logout") // 登出后跳转到的页面
-                .permitAll() // 登出页允许没登录的情况访问
+                //没有认证时,在这里处理结果,不进行重定向
+                .exceptionHandling()
+                .authenticationEntryPoint(authEntryPoint)
+                // 允许iframe中发送的请求
+                .and().headers().frameOptions().disable()
+                // 先禁用掉csrf
+                .and().csrf().disable();
 
-                .and().headers().frameOptions().disable() // 允许iframe中发送的请求
-
-                .and().csrf().disable(); // 先禁用掉csrf，否则POST的时候会报403
-
-        super.configure(http); //To change body of generated methods, choose Tools | Templates.
+        super.configure(http);
     }
 
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(adminService);
+        authenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder());
+        return authenticationProvider;
+    }
 }

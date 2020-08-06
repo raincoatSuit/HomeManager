@@ -30,7 +30,7 @@ public class Admin implements UserDetails {
 
     private String username;
 
-    private String pwd;
+    private String password;
 
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
@@ -39,7 +39,7 @@ public class Admin implements UserDetails {
 
     @Override
     public String getPassword() {
-        return pwd;
+        return password;
     }
 
     @Override
@@ -47,16 +47,19 @@ public class Admin implements UserDetails {
         return this.username;
     }
 
+    /*账号是否没过期*/
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    /*账号是否没过期*/
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    /*密码是否没过期*/
     @Override
     public boolean isCredentialsNonExpired() {
         return true;

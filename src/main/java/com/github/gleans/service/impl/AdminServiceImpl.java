@@ -1,5 +1,6 @@
 package com.github.gleans.service.impl;
 
+import com.github.gleans.exception.AuthException;
 import com.github.gleans.model.Admin;
 import com.github.gleans.repository.AdminRepository;
 import com.github.gleans.service.AdminService;
@@ -35,7 +36,7 @@ public class AdminServiceImpl implements AdminService {
     public String save(Admin admin) {
         if (admin.getAdminId() == null) {
             BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-            admin.setPwd(passwordEncoder.encode(admin.getPwd()));
+            admin.setPassword(passwordEncoder.encode(admin.getPassword()));
         }
         adminRepository.save(admin);
         return admin.getAdminId();
@@ -44,7 +45,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return adminRepository.findByUsername(username).orElse(null);
+        UserDetails userDetails = adminRepository.findByUsername(username)
+                .orElseThrow(() -> new AuthException(-1, "用户名密码错误！"));
+        return userDetails;
     }
 
 }
