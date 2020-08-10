@@ -32,6 +32,8 @@ public class Admin implements UserDetails {
 
     private String password;
 
+    private String token;
+
     @Override
     public Collection<GrantedAuthority> getAuthorities() {
         return null;

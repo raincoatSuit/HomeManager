@@ -1,17 +1,46 @@
+import { ConfigProvider, message } from 'antd';
+import 'antd/dist/antd.css';
+import zhCN from 'antd/lib/locale/zh_CN';
+import { StoreProvider } from 'easy-peasy';
+import moment from 'moment';
+import 'moment/locale/zh-cn';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import * as serviceWorker from './serviceWorker';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { router } from './constants/router';
+import { store } from './constants/store';
+import RouterLayout from './layouts/RouterLayout';
+import './style/global.css';
+import request from './utils/request';
+
+moment.locale('zh-cn');
+request.interceptors.response = async function(response) {
+  const res: ResponseBody<any> = await response.json();
+
+  if (!res.code) {
+    return res;
+  } else {
+    // eslint-disable-next-line
+    throw { statusText: res.data, url: response.url, res };
+  }
+};
+request.interceptors.catch = function(error) {
+  if (error.status === 401) {
+    sessionStorage.setItem('code', '401');
+    window.location.href = '/login';
+    return;
+  }
+
+  message.error(error.statusText ?? '无法连接服务器');
+};
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+  <ConfigProvider locale={zhCN}>
+    <StoreProvider store={store}>
+      <Router>
+        <RouterLayout router={router} />
+      </Router>
+    </StoreProvider>
+  </ConfigProvider>,
+  document.getElementById('root'),
 );
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();

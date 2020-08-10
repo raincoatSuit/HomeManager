@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  flex: auto;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background-image: url('../images/bg_img4.jpg');
+  background-size: 100% 100%;
+
+  .login_form {
+    position: absolute;
+    left: 300px;
+    width: 300px;
+    padding: 20px;
+    background: rgba(54, 36, 36, 0.63);
+    box-shadow: 3px 3px 6px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .span_font {
+    span {
+      color: white;
+    }
+  }
+}
+
+.ant-form-item-control-input-content {
+  height: 5px !important;
+}
