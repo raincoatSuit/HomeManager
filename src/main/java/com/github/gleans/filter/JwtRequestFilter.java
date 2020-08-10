@@ -44,22 +44,21 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             } catch (ExpiredJwtException e) {
                 System.out.println("JWT Token has expired");
             }
-        }
-        else {
+        } else {
             log.warn("JWT Token does not begin with Bearer String");
         }
-// Once we get the token validate it.
+        // 验证token
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.adminService.loadUserByUsername(username);
-// if token is valid configure Spring Security to manually set
-// authentication
+            // 如果token通过验证，那么把它放进上下文
             if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-// After setting the Authentication in the context, we specify
-// that the current user is authenticated. So it passes the
-// Spring Security Configurations successfully.
+                /*
+                在上下文中设置身份验证后，我们指定当前用户已通过身份验证。
+                因此它成功通过了Spring Security Configurations。
+                 */
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             }
         }

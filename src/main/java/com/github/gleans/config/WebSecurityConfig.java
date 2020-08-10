@@ -16,22 +16,39 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/*
+ Web 安全权限配置
+ */
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    @Autowired
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    @Autowired
+
+    private CustomAuthEntryPoint customAuthEntryPoint;
     private AdminService adminService;
-    @Autowired
     private JwtRequestFilter jwtRequestFilter;
 
     @Autowired
+    public void setCustomAuthEntryPoint(CustomAuthEntryPoint customAuthEntryPoint) {
+        this.customAuthEntryPoint = customAuthEntryPoint;
+    }
+
+    @Autowired
+    public void setAdminService(AdminService adminService) {
+        this.adminService = adminService;
+    }
+
+    @Autowired
+    public void setJwtRequestFilter(JwtRequestFilter jwtRequestFilter) {
+        this.jwtRequestFilter = jwtRequestFilter;
+    }
+
+    @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-// configure AuthenticationManager so that it knows from where to load
-// user for matching credentials
-// Use BCryptPasswordEncoder
+        /* 配置 AuthenticationManager 以便 Spring 知道从哪里加载
+         匹配用户凭证
+         使用 BCryptPasswordEncoder 密码加密
+         */
         auth.userDetailsService(adminService).passwordEncoder(passwordEncoder());
     }
 
@@ -48,19 +65,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
-// We don't need CSRF for this example
-//        httpSecurity.csrf().disable()
-// dont authenticate this particular request
-        httpSecurity.authorizeRequests().antMatchers("/authenticate").permitAll().
-// all other requests need to be authenticated
-        anyRequest().authenticated().and().
-// make sure we use stateless session; session won't be used to
-// store user's state.
-        exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
+        // 放行请求token的路径
+        httpSecurity.authorizeRequests().antMatchers("/authenticate").permitAll()
+                // 所有其他请求都需要认证
+                .anyRequest().authenticated()
+                .and()
+                // 确保我们使用无状态会话；会话将不会用于存储用户状态。
+                .exceptionHandling()
+                .authenticationEntryPoint(customAuthEntryPoint)
+                .and()
+                .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-// Add a filter to validate the tokens with every request
+        // 添加一个过滤器以验证每个请求的令牌
         httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-                httpSecurity.csrf().disable();
-
+        // 禁用CSRF
+        httpSecurity.csrf().disable();
     }
 }
